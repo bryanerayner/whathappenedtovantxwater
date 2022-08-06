@@ -1,15 +1,29 @@
 <html>
   <head>
     <title>What happened to Van TX Water bill?</title>
+
+    <style>
+      
+      form {
+        margin-top: 30px;
+        display: flex;
+        flex-direction: column;
+      }
+      label {
+        margin: 16px;
+        font-size: 30px;
+      }
+      
+    </style>
   </head>
   
   <body>
     
-    <div>I set this up to help you understand why your water bill is what it is.</div>
+    <h3>I set this up to help you understand why your water bill is what it is.</h3>
 
-    <div>I took 20 minutes to make this site, so it's not pretty. Enter what your usage was, and I'll try my best to calculate what your old bill would have been, vs what your new bill is now.</div>
+    <h6>I took 20 minutes to make this site, so it's not pretty. Enter what your usage was, and I'll try my best to calculate what your old bill would have been, vs what your new bill is now.</h6>
 
-    </div>Does not include Garbage</div>
+    </span>Does not include Garbage</span>
 
     <script>
         const categories = {
@@ -123,7 +137,7 @@
                     var gallonsInBracket = max - min;
                     var thousandsOfGallonsInBracket = gallonsInBracket / 1000;
                     var priceForBracket = thousandsOfGallonsInBracket * costPerThousandGallons;
-                    totalPrice += finalPrice;
+                    totalPrice += priceForBracket;
                 }
             });
             return totalPrice;
@@ -173,8 +187,8 @@
 
 
         window.calculate = function(event) {
-            event.preventDefault();
             calculateValues();
+            return false;
         }
 
 
@@ -213,7 +227,7 @@
     </label>
         
       
-        <button onclick="calculate()">Calculate my rates</button>
+        <button onclick="calculate()" type="button">Calculate my rates</button>
     </form>
 
     <div id="answer">
