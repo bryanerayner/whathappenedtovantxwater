@@ -11,9 +11,6 @@
 
     </div>Does not include Garbage</div>
 
-    <img src="https://scontent-dfw5-1.xx.fbcdn.net/v/t39.30808-6/295982523_359023446406431_1905950255707726862_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=730e14&_nc_ohc=U3MtUW-CuagAX8lITNi&_nc_ht=scontent-dfw5-1.xx&oh=00_AT9JqdRsznu_EGpoUp-8hpfP8DuH0icGKWdHMWa8z7cW5g&oe=62F310AC" />
-
-
     <script>
         const categories = {
             old: {},
@@ -22,9 +19,9 @@
 
         const oldFlatRates = {
             insideResidential: 20,
-outsideResidential: 40,
-insideCommercial: 30,
-outsideCommercial: 55,
+            outsideResidential: 40,
+            insideCommercial: 30,
+            outsideCommercial: 55,
         }
 
         const newMonthlyMeterFee = {
@@ -53,31 +50,30 @@ outsideCommercial: 55,
             gallonRange(8001, 10000, 7),
             gallonRange(10001, Infinity, 8)
         ])
-addCategory('new', 'outsideResidential', [
+        addCategory('new', 'outsideResidential', [
             gallonRange(0, 2000, 6),
             gallonRange(2001, 4000, 8),
             gallonRange(4001, 6000, 10),
             gallonRange(6001, 8000, 12),
             gallonRange(8001, 10000, 14),
             gallonRange(10001, Infinity, 16)
-
-])
-addCategory('new', 'commercial', [
+        ])
+        addCategory('new', 'commercial', [
             gallonRange(0, 2000, 4),
             gallonRange(2001, 4000, 5),
             gallonRange(4001, 6000, 6),
             gallonRange(6001, 8000, 7),
             gallonRange(8001, 10000, 8),
             gallonRange(10001, Infinity, 9)
-])
-addCategory('new', 'irrigation', [
-        gallonRange(0, 2000, 4),
-        gallonRange(2001, 4000, 5),
-        gallonRange(4001, 6000, 6),
-        gallonRange(6001, 8000, 7),
-        gallonRange(8001, 10000, 8),
-        gallonRange(10001, Infinity, 9)
-])
+        ])
+        addCategory('new', 'irrigation', [
+            gallonRange(0, 2000, 4),
+            gallonRange(2001, 4000, 5),
+            gallonRange(4001, 6000, 6),
+            gallonRange(6001, 8000, 7),
+            gallonRange(8001, 10000, 8),
+            gallonRange(10001, Infinity, 9)
+        ])
 
 
         addCategory('old', 'insideResidential', [
@@ -86,30 +82,106 @@ addCategory('new', 'irrigation', [
             gallonRange(20_001, 30_000, 4.60),
             gallonRange(30_001, Infinity, 5.50)
         ])
-addCategory('old', 'outsideResidential', [
+        addCategory('old', 'outsideResidential', [
             gallonRange(2001, 10_000, 4),
             gallonRange(10_001, 20_000, 5.50),
             gallonRange(20_001, 30_000, 7.10),
             gallonRange(30_001, Infinity, 8.75)
-
-])
-addCategory('old', 'insideCommercial', [
+        ])
+        addCategory('old', 'insideCommercial', [
             gallonRange(2001, 10_000, 3.50),
             gallonRange(10_001, 20_000, 4),
             gallonRange(20_001, 30_000, 4.85),
             gallonRange(30_001, Infinity, 5.35)
-])
-addCategory('old', 'outsideCommercial', [
-        gallonRange(2001, 10_000, 6),
+        ])
+        addCategory('old', 'outsideCommercial', [
+            gallonRange(2001, 10_000, 6),
             gallonRange(10_001, 20_000, 6.50),
             gallonRange(20_001, 30_000, 8.35),
             gallonRange(30_001, Infinity, 9.85)
-])
+        ])
+
+
+        function calculatePerGallonPrice(oldOrNew, userCategory, gallonsUsed) {
+            var category = categories[oldOrNew][userCategory];
+            if (!category) {
+                return Infinity;
+            }
+            // Make sure this is a number;
+            gallonsUsed = parseInt(gallonsUsed + '');
+            var totalPrice = 0;
+            category.forEach(({min, max, costPerThousandGallons}) => {
+                if (gallonsUsed > min && gallonsUsed < max) {
+                    // This is the final value. We need to subtract from the max, and then price it at the rate per thousand.
+                    var gallonsOverStartOfRange = gallonsUsed - min;
+                    var toThousandsOfGallons = gallonsOverStartOfRange / 1000;
+                    var finalPrice = toThousandsOfGallons * costPerThousandGallons;
+                    totalPrice += finalPrice;
+                } else if (gallonsUsed > min && gallonsUsed > max) {
+                    // We went way over this bracket. How many thousands of gallons does this bracket span? Let's use the entireity of this bracket
+                    // and include it.
+                    var gallonsInBracket = max - min;
+                    var thousandsOfGallonsInBracket = gallonsInBracket / 1000;
+                    var priceForBracket = thousandsOfGallonsInBracket * costPerThousandGallons;
+                    totalPrice += finalPrice;
+                }
+            });
+            return totalPrice;
+        }
+
+
+        function calculateOldPrice(category, gallonsUsed) {
+            if (gallonsUsed === 0) {
+                return oldFlatRates[category];
+            }
+            var perGallonPrice = calculatePerGallonPrice('old', category, gallonsUsed);
+            return oldFlatRates[category] + perGallonPrice;
+        }
+
+        function calculateNewPrice(category, meterType, gallonsUsed) {
+            var meterTypePrice = newMonthlyMeterFee[meterType];
+            var perGallonPrice = calculatePerGallonPrice('new', category, gallonsUsed);
+            return meterTypePrice + perGallonPrice;
+        }
+
+        function calculateValues() {
+            var userCategory = document.querySelector('#category');
+            var userMeterType = document.querySelector('#meterType');
+            var gallonsUsed = document.querySelector('#gallonsUsed');
+
+            var oldPrice = calculateOldPrice(userCategory.value, Number(gallonsUsed.value));
+            var newPrice = calculateNewPrice(userCategory.value, userMeterType.value, Number(gallonsUsed.value));
+
+            printResults(oldPrice, newPrice);
+
+        }
+
+        function printResults(oldPrice, newPrice) {
+            var oldRatesAnswer = document.querySelector('#oldRatesAnswer');
+            var newRatesAnswer = document.querySelector('#newRatesAnswer');
+
+            oldRatesAnswer.innerHTML = `Your price under the old policy should be close to $${oldPrice.toFixed(2)}`;
+            newRatesAnswer.innerHTML = `Your price under the new policy should be close to $${newPrice.toFixed(2)}`;
+
+            if (oldPrice === Infinity) {
+                oldRatesAnswer.innerHTML = `We're unable to calculate the old price here. Likely there is a category in the new system that doesn't exist in the old one, or vice versa`;
+            }
+            if (newPrice === Infinity) {
+                newRatesAnswer.innerHTML = `We're unable to calculate the new price here. Likely there is a category in the old system that doesn't exist in the new one, or vice versa`;
+            }
+        }
+
+
+        window.calculate = function(event) {
+            event.preventDefault();
+            calculateValues();
+        }
 
 
     </script>
 
-<form>
+
+    <form>
         <label for="category">
             What category does your bill fall under?
             <select id="category" name="category">
@@ -139,21 +211,19 @@ addCategory('old', 'outsideCommercial', [
         How many gallons did you use (NOT thousands of gallons, the full number)
         <input type="number" value="2000" name="gallonsUsed" id="gallonsUsed" /> 
     </label>
-    
-        <label for="oldOrNew">
-            Would you like to calculate using the old rates or the new rates?
-            <select id="oldOrNew" name="oldOrNew">
-                <option value="insideResidential">New rates</option>
-                <option value="outsideResidential">Old rates</option>
-            </select>
-        </label>
-    
+        
       
-        <button onclick="calculate()"></button>
-</form>
+        <button onclick="calculate()">Calculate my rates</button>
+    </form>
 
     <div id="answer">
         Fill out the form to get your answer
+    </div>
+    <div id="oldRatesAnswer">
+
+    </div>
+    <div id="newRatesAnswer">
+        
     </div>
     
     
